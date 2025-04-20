@@ -1,7 +1,11 @@
-import { AppBar, Toolbar, IconButton, Box } from '@mui/material';
+import { AppBar, Toolbar, IconButton, Typography, Box, Avatar, Button } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
+import PersonIcon from '@mui/icons-material/Person';
+import { login, logout, getUser, isAuthenticated } from '../services/authService';
+import { User } from '../models/User';
+import { useState, useEffect } from 'react';
 
 interface AppHeaderProps {
   onMenuClick: () => void;
@@ -10,6 +14,29 @@ interface AppHeaderProps {
 }
 
 export const AppHeader = ({ onMenuClick, darkMode, onThemeToggle }: AppHeaderProps) => {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const isAuth = await isAuthenticated();
+      if (isAuth) {
+        const userData = await getUser();
+        setUser(userData);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  const handleLogin = async () => {
+    await login();
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setUser(null);
+  };
+
   return (
     <AppBar 
       position="fixed" 
@@ -32,10 +59,30 @@ export const AppHeader = ({ onMenuClick, darkMode, onThemeToggle }: AppHeaderPro
         >
           <MenuIcon />
         </IconButton>
-        <Box sx={{ flexGrow: 1 }} />
-        <IconButton onClick={onThemeToggle} color="inherit">
-          {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
-        </IconButton>
+        <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+          FeedMe
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Avatar
+            src={user?.picture}
+            alt={user?.name}
+            sx={{ width: 32, height: 32 }}
+          >
+            <PersonIcon />
+          </Avatar>
+          {user ? (
+            <Button color="inherit" onClick={handleLogout}>
+              Sign Out
+            </Button>
+          ) : (
+            <Button color="inherit" onClick={handleLogin}>
+              Log In
+            </Button>
+          )}
+          <IconButton color="inherit" onClick={onThemeToggle}>
+            {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+          </IconButton>
+        </Box>
       </Toolbar>
     </AppBar>
   );

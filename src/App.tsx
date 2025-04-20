@@ -2,15 +2,17 @@ import { Container, Typography, Box, TextField, Button, Paper, List, ListItem, L
 import { CreateShoppingListModal } from './components/CreateShoppingListModal';
 import { ShoppingList } from './components/ShoppingList';
 import { useShoppingListViewModel } from './viewmodels/ShoppingListViewModel';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { exampleCommands } from './constants/commands';
 import { Navbar } from './components/Navbar';
 import { AppHeader } from './components/AppHeader';
+import { getAuth0Client, isAuthenticated, handleRedirectCallback } from './services/authService';
 
 function App() {
   const [userInput, setUserInput] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const {
     open,
     inputText,
@@ -21,6 +23,36 @@ function App() {
     setInputText,
     handleCreateList,
   } = useShoppingListViewModel();
+
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        // Initialize Auth0 client
+        await getAuth0Client();
+        
+        // Check if we're handling a redirect callback
+        if (window.location.search.includes('code=') && window.location.search.includes('state=')) {
+          try {
+            await handleRedirectCallback();
+            // Clear the URL parameters after handling the callback
+            window.history.replaceState({}, document.title, window.location.pathname);
+          } catch (error) {
+            console.error('Error handling redirect callback:', error);
+            // Clear any existing state from localStorage
+            localStorage.removeItem('auth0:state');
+          }
+        }
+
+        await isAuthenticated();
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
+
+    initializeAuth();
+  }, []);
 
   const handleDrawerToggle = () => {
     setDrawerOpen(!drawerOpen);
@@ -35,6 +67,16 @@ function App() {
     setInputText(userInput);
     handleCreateList();
   };
+
+  if (isAuthLoading) {
+    return (
+      <Container>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+          <Typography>Loading...</Typography>
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>

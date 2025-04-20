@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { ShoppingListService } from '../services/shoppingListService';
-import { ShoppingList } from '../models/ShoppingList';
 import { GroceryItem } from '../models/GroceryItem';
 
 export const useShoppingListViewModel = () => {
@@ -28,12 +27,10 @@ export const useShoppingListViewModel = () => {
     try {
       const result = await ShoppingListService.createShoppingList(inputText);
       setShoppingItems(result.items);
-      console.log(result.items);
       handleClose();
       setInputText('');
     } catch (err) {
       setError('Failed to create shopping list. Please try again.');
-      console.error('Error:', err);
     } finally {
       setIsLoading(false);
     }
