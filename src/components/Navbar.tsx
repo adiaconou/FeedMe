@@ -11,7 +11,6 @@ import {
   Avatar,
   Typography,
 } from '@mui/material';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import PersonIcon from '@mui/icons-material/Person';
 import { getUser, isAuthenticated } from '../services/authService';
@@ -20,23 +19,10 @@ import { User } from '../models/User';
 interface NavbarProps {
   open: boolean;
   onClose: () => void;
+  user: User | null;
 }
 
-export const Navbar = ({ open, onClose }: NavbarProps) => {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const isAuth = await isAuthenticated();
-      if (isAuth) {
-        const userData = await getUser();
-        setUser(userData);
-      }
-    };
-
-    checkAuth();
-  }, []);
-
+export const Navbar = ({ open, onClose, user }: NavbarProps) => {
   const handleProfileClick = () => {
     // Navigate to profile page
     console.log('Navigate to profile');

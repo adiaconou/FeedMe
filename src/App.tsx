@@ -6,12 +6,14 @@ import { useState, useEffect } from 'react';
 import { exampleCommands } from './constants/commands';
 import { Navbar } from './components/Navbar';
 import { AppHeader } from './components/AppHeader';
-import { getAuth0Client, isAuthenticated, handleRedirectCallback } from './services/authService';
+import { getAuth0Client, isAuthenticated, handleRedirectCallback, getUser } from './services/authService';
+import { User } from './models/User';
 
 function App() {
   const [userInput, setUserInput] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const {
     open,
@@ -27,23 +29,20 @@ function App() {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Initialize Auth0 client
-        await getAuth0Client();
+        const auth0 = await getAuth0Client();
         
-        // Check if we're handling a redirect callback
-        if (window.location.search.includes('code=') && window.location.search.includes('state=')) {
-          try {
-            await handleRedirectCallback();
-            // Clear the URL parameters after handling the callback
+        if (window.location.search.includes('code=')) {
+          const success = await handleRedirectCallback();
+          if (success) {
             window.history.replaceState({}, document.title, window.location.pathname);
-          } catch (error) {
-            console.error('Error handling redirect callback:', error);
-            // Clear any existing state from localStorage
-            localStorage.removeItem('auth0:state');
           }
         }
 
-        await isAuthenticated();
+        const isAuth = await isAuthenticated();
+        if (isAuth) {
+          const userData = await getUser();
+          setUser(userData);
+        }
       } catch (error) {
         console.error('Error initializing auth:', error);
       } finally {
@@ -84,8 +83,10 @@ function App() {
         onMenuClick={handleDrawerToggle}
         darkMode={darkMode}
         onThemeToggle={handleThemeToggle}
+        user={user}
+        onUserChange={setUser}
       />
-      <Navbar open={drawerOpen} onClose={handleDrawerToggle} />
+      <Navbar open={drawerOpen} onClose={handleDrawerToggle} user={user} />
       <Box
         component="main"
         sx={{

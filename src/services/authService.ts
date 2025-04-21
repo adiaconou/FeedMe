@@ -28,7 +28,7 @@ const auth0Config = {
   domain: AUTH0_DOMAIN,
   clientId: AUTH0_CLIENT_ID,
   authorizationParams: {
-    redirect_uri: window.location.origin,
+    redirect_uri: `${window.location.origin}/`,
     audience: AUTH0_AUDIENCE,
   },
   cacheLocation: 'localstorage' as const,
@@ -40,9 +40,7 @@ let auth0Client: Auth0Client | null = null;
 export const getAuth0Client = async () => {
   try {
     if (!auth0Client) {
-      console.log('Creating new Auth0 client...');
       auth0Client = await createAuth0Client(auth0Config);
-      console.log('Auth0 client created successfully');
     }
     return auth0Client;
   } catch (error) {
@@ -56,7 +54,7 @@ export const login = async () => {
     const auth0 = await getAuth0Client();
     await auth0.loginWithRedirect({
       authorizationParams: {
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}/`,
         audience: AUTH0_AUDIENCE,
       },
     });
@@ -68,8 +66,8 @@ export const login = async () => {
 
 export const logout = async () => {
   try {
-    const client = await getAuth0Client();
-    await client.logout({
+    const auth0 = await getAuth0Client();
+    await auth0.logout({
       logoutParams: {
         returnTo: window.location.origin,
       },
@@ -82,23 +80,24 @@ export const logout = async () => {
 
 export const isAuthenticated = async () => {
   try {
-    const client = await getAuth0Client();
-    return await client.isAuthenticated();
+    const auth0 = await getAuth0Client();
+    return await auth0.isAuthenticated();
   } catch (error) {
     console.error('Authentication check error:', error);
-    throw error;
+    return false;
   }
 };
 
 export const getUser = async () => {
   try {
-    const client = await getAuth0Client();
-    const user = await client.getUser();
+    const auth0 = await getAuth0Client();
+    const user = await auth0.getUser();
+    if (!user) throw new Error('No user found');
     return {
-      id: user?.sub || '',
-      email: user?.email,
-      name: user?.name,
-      picture: user?.picture,
+      id: user.sub || '',
+      email: user.email,
+      name: user.name,
+      picture: user.picture,
     } as User;
   } catch (error) {
     console.error('Get user error:', error);
@@ -109,12 +108,10 @@ export const getUser = async () => {
 export const handleRedirectCallback = async () => {
   try {
     const auth0 = await getAuth0Client();
-    const { appState } = await auth0.handleRedirectCallback();
-    return appState;
+    await auth0.handleRedirectCallback();
+    return true;
   } catch (error) {
     console.error('Redirect callback error:', error);
-    // Clear any existing state from localStorage
-    localStorage.removeItem('auth0:state');
-    return null;
+    return false;
   }
 }; 

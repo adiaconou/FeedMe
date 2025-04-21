@@ -3,38 +3,32 @@ import MenuIcon from '@mui/icons-material/Menu';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import PersonIcon from '@mui/icons-material/Person';
-import { login, logout, getUser, isAuthenticated } from '../services/authService';
+import { login, logout } from '../services/authService';
 import { User } from '../models/User';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 interface AppHeaderProps {
   onMenuClick: () => void;
   darkMode: boolean;
   onThemeToggle: () => void;
+  user: User | null;
+  onUserChange: (user: User | null) => void;
 }
 
-export const AppHeader = ({ onMenuClick, darkMode, onThemeToggle }: AppHeaderProps) => {
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const isAuth = await isAuthenticated();
-      if (isAuth) {
-        const userData = await getUser();
-        setUser(userData);
-      }
-    };
-
-    checkAuth();
-  }, []);
-
+export const AppHeader = ({ 
+  onMenuClick, 
+  darkMode, 
+  onThemeToggle,
+  user,
+  onUserChange 
+}: AppHeaderProps) => {
   const handleLogin = async () => {
     await login();
   };
 
   const handleLogout = async () => {
     await logout();
-    setUser(null);
+    onUserChange(null);
   };
 
   return (
