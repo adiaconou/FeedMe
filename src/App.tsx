@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { exampleCommands } from './constants/commands';
 import { Navbar } from './components/Navbar';
 import { AppHeader } from './components/AppHeader';
-import { getAuth0Client, isAuthenticated, handleRedirectCallback, getUser } from './services/authService';
+import { isAuthenticated, handleRedirectCallback, getUser } from './services/authService';
 import { User } from './models/User';
 
 function App() {
@@ -15,6 +15,7 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+
   const {
     open,
     inputText,
@@ -29,22 +30,19 @@ function App() {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const auth0 = await getAuth0Client();
-        
-        if (window.location.search.includes('code=')) {
-          const success = await handleRedirectCallback();
-          if (success) {
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
-        }
-
+        // Only check auth status, let authService handle redirects
         const isAuth = await isAuthenticated();
+        console.log('Authentication status:', isAuth);
+        
         if (isAuth) {
           const userData = await getUser();
           setUser(userData);
+        } else {
+          setUser(null);
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('Authentication init failed:', error);
+        setUser(null);
       } finally {
         setIsAuthLoading(false);
       }
@@ -53,13 +51,8 @@ function App() {
     initializeAuth();
   }, []);
 
-  const handleDrawerToggle = () => {
-    setDrawerOpen(!drawerOpen);
-  };
-
-  const handleThemeToggle = () => {
-    setDarkMode(!darkMode);
-  };
+  const handleDrawerToggle = () => setDrawerOpen(!drawerOpen);
+  const handleThemeToggle = () => setDarkMode(!darkMode);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +103,7 @@ function App() {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            minHeight: 'calc(100vh - 64px)', // Subtract header height
+            minHeight: 'calc(100vh - 64px)',
           }}
         >
           <Box

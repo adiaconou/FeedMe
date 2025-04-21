@@ -1,4 +1,4 @@
-import { AppBar, Toolbar, IconButton, Typography, Box, Avatar, Button } from '@mui/material';
+import { AppBar, Toolbar, IconButton, Typography, Box, Avatar, Button, Tooltip } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -57,13 +57,22 @@ export const AppHeader = ({
           FeedMe
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Avatar
-            src={user?.picture}
-            alt={user?.name}
-            sx={{ width: 32, height: 32 }}
-          >
-            <PersonIcon />
-          </Avatar>
+          <Tooltip title={user?.name || 'User Profile'}>
+            <Avatar
+              src={user?.picture}
+              alt={user?.name}
+              sx={{ 
+                width: 32, 
+                height: 32,
+                cursor: 'pointer',
+                '&:hover': {
+                  opacity: 0.8,
+                }
+              }}
+            >
+              {!user?.picture && <PersonIcon />}
+            </Avatar>
+          </Tooltip>
           {user ? (
             <Button color="inherit" onClick={handleLogout}>
               Sign Out

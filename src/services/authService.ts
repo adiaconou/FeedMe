@@ -1,117 +1,81 @@
+// src/services/authService.ts
+import { createAuth0Client, Auth0Client } from '@auth0/auth0-spa-js';
 import { User } from '../models/User';
-import { createAuth0Client } from '@auth0/auth0-spa-js';
-import { Auth0Client } from '@auth0/auth0-spa-js';
 
-// Verify environment variables
-if (!import.meta.env.VITE_AUTH0_DOMAIN) {
-  throw new Error('Missing VITE_AUTH0_DOMAIN environment variable');
-}
-if (!import.meta.env.VITE_AUTH0_CLIENT_ID) {
-  throw new Error('Missing VITE_AUTH0_CLIENT_ID environment variable');
-}
-if (!import.meta.env.VITE_AUTH0_AUDIENCE) {
-  throw new Error('Missing VITE_AUTH0_AUDIENCE environment variable');
-}
-
-const AUTH0_DOMAIN = import.meta.env.VITE_AUTH0_DOMAIN;
-const AUTH0_CLIENT_ID = import.meta.env.VITE_AUTH0_CLIENT_ID;
-const AUTH0_AUDIENCE = import.meta.env.VITE_AUTH0_AUDIENCE;
-
-console.log('Auth0 Configuration:', {
-  domain: AUTH0_DOMAIN,
-  clientId: AUTH0_CLIENT_ID,
-  audience: AUTH0_AUDIENCE,
-  currentUrl: window.location.origin
-});
+const AUTH0_DOMAIN = import.meta.env.VITE_AUTH0_DOMAIN!;
+const AUTH0_CLIENT_ID = import.meta.env.VITE_AUTH0_CLIENT_ID!;
+const AUTH0_AUDIENCE = import.meta.env.VITE_AUTH0_AUDIENCE!;
+const REDIRECT_URI = window.location.origin;
 
 const auth0Config = {
   domain: AUTH0_DOMAIN,
   clientId: AUTH0_CLIENT_ID,
   authorizationParams: {
-    redirect_uri: `${window.location.origin}/`,
+    redirect_uri: REDIRECT_URI,
     audience: AUTH0_AUDIENCE,
+    scope: 'openid profile email',
   },
   cacheLocation: 'localstorage' as const,
   useRefreshTokens: true,
 };
 
 let auth0Client: Auth0Client | null = null;
+let isHandlingRedirect = false;
 
-export const getAuth0Client = async () => {
-  try {
-    if (!auth0Client) {
-      auth0Client = await createAuth0Client(auth0Config);
+const getAuth0Client = async (): Promise<Auth0Client> => {
+  if (!auth0Client) {
+    auth0Client = await createAuth0Client(auth0Config);
+    
+    // Handle redirect callback immediately after client creation
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.has('code') && searchParams.has('state') && !isHandlingRedirect) {
+      isHandlingRedirect = true;
+      try {
+        await auth0Client.handleRedirectCallback();
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (error) {
+        console.error('Initial redirect handling failed:', error);
+      } finally {
+        isHandlingRedirect = false;
+      }
     }
-    return auth0Client;
-  } catch (error) {
-    console.error('Error creating Auth0 client:', error);
-    throw error;
   }
+  return auth0Client;
 };
 
 export const login = async () => {
-  try {
-    const auth0 = await getAuth0Client();
-    await auth0.loginWithRedirect({
-      authorizationParams: {
-        redirect_uri: `${window.location.origin}/`,
-        audience: AUTH0_AUDIENCE,
-      },
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    throw error;
-  }
+  const auth0 = await getAuth0Client();
+  await auth0.loginWithRedirect();
 };
 
 export const logout = async () => {
-  try {
-    const auth0 = await getAuth0Client();
-    await auth0.logout({
-      logoutParams: {
-        returnTo: window.location.origin,
-      },
-    });
-  } catch (error) {
-    console.error('Logout error:', error);
-    throw error;
-  }
+  const auth0 = await getAuth0Client();
+  await auth0.logout({
+    logoutParams: {
+      returnTo: REDIRECT_URI,
+    },
+  });
 };
 
-export const isAuthenticated = async () => {
-  try {
-    const auth0 = await getAuth0Client();
-    return await auth0.isAuthenticated();
-  } catch (error) {
-    console.error('Authentication check error:', error);
-    return false;
-  }
+export const isAuthenticated = async (): Promise<boolean> => {
+  const auth0 = await getAuth0Client();
+  return await auth0.isAuthenticated();
 };
 
-export const getUser = async () => {
-  try {
-    const auth0 = await getAuth0Client();
-    const user = await auth0.getUser();
-    if (!user) throw new Error('No user found');
-    return {
-      id: user.sub || '',
-      email: user.email,
-      name: user.name,
-      picture: user.picture,
-    } as User;
-  } catch (error) {
-    console.error('Get user error:', error);
-    throw error;
-  }
+export const getUser = async (): Promise<User | null> => {
+  const auth0 = await getAuth0Client();
+  const auth0User = await auth0.getUser();
+  if (!auth0User) return null;
+  
+  return {
+    id: auth0User.sub || '',
+    email: auth0User.email || '',
+    name: auth0User.name || '',
+    picture: auth0User.picture
+  };
 };
 
-export const handleRedirectCallback = async () => {
-  try {
-    const auth0 = await getAuth0Client();
-    await auth0.handleRedirectCallback();
-    return true;
-  } catch (error) {
-    console.error('Redirect callback error:', error);
-    return false;
-  }
-}; 
+export const handleRedirectCallback = async (): Promise<boolean> => {
+  // Redirect is already handled in getAuth0Client
+  return true;
+};
