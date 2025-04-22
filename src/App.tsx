@@ -6,15 +6,17 @@ import { useState, useEffect } from 'react';
 import { exampleCommands } from './constants/commands';
 import { Navbar } from './components/Navbar';
 import { AppHeader } from './components/AppHeader';
-import { isAuthenticated, handleRedirectCallback, getUser } from './services/authService';
+import { isAuthenticated, getUser } from './services/authService';
 import { User } from './models/User';
+import { ThemeProvider, useTheme } from './theme/ThemeContext';
+import { CssBaseline } from '@mui/material';
 
 function App() {
   const [userInput, setUserInput] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const { isDarkMode, toggleTheme } = useTheme();
 
   const {
     open,
@@ -30,7 +32,6 @@ function App() {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Only check auth status, let authService handle redirects
         const isAuth = await isAuthenticated();
         console.log('Authentication status:', isAuth);
         
@@ -52,7 +53,6 @@ function App() {
   }, []);
 
   const handleDrawerToggle = () => setDrawerOpen(!drawerOpen);
-  const handleThemeToggle = () => setDarkMode(!darkMode);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,8 +74,8 @@ function App() {
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <AppHeader 
         onMenuClick={handleDrawerToggle}
-        darkMode={darkMode}
-        onThemeToggle={handleThemeToggle}
+        darkMode={isDarkMode}
+        onThemeToggle={toggleTheme}
         user={user}
         onUserChange={setUser}
       />
@@ -237,4 +237,13 @@ function App() {
   );
 }
 
-export default App;
+const AppWithTheme: React.FC = () => {
+  return (
+    <ThemeProvider>
+      <CssBaseline />
+      <App />
+    </ThemeProvider>
+  );
+};
+
+export default AppWithTheme;

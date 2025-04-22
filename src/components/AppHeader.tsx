@@ -5,7 +5,6 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import PersonIcon from '@mui/icons-material/Person';
 import { login, logout } from '../services/authService';
 import { User } from '../models/User';
-import { useState } from 'react';
 
 interface AppHeaderProps {
   onMenuClick: () => void;
@@ -47,8 +46,8 @@ export const AppHeader = ({
         <IconButton
           color="inherit"
           aria-label="open drawer"
-          onClick={onMenuClick}
           edge="start"
+          onClick={onMenuClick}
           sx={{ mr: 2 }}
         >
           <MenuIcon />
